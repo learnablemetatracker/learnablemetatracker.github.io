@@ -33,7 +33,7 @@ export function summarizeMyMaps(myMapsList) {
   return { totalMetas, totalMastered, avgCompletion };
 }
 
-function isMapMastered(map) {
+export function isMapMastered(map) {
   return map.total > 0 && map.mastered === map.total;
 }
 
@@ -100,8 +100,10 @@ export function filterByRegion(maps, region) {
   return maps.filter((m) => Array.isArray(m.regions) && m.regions.includes(region));
 }
 
+// "Almost there" only — a fully mastered map (100%) gets its own
+// congratulatory state (isMapMastered) instead of this "keep going" nudge.
 export function isReadyForNextMap(mapProgress, threshold = 0.9) {
-  return mapProgress.total > 0 && mapProgress.percentMastered >= threshold;
+  return mapProgress.total > 0 && mapProgress.percentMastered >= threshold && mapProgress.percentMastered < 1;
 }
 
 export function mapMetas(catalogMap, catalog, progress) {

@@ -100,3 +100,9 @@ test('t returns the meta-region-is-estimated note in each language', () => {
     'La región es una estimación según el nombre de cada meta, ya que un mapa puede mezclar varios continentes.'
   );
 });
+
+test('t returns a distinct mapMastered message from readyForNextMap in each language', () => {
+  assert.equal(t('en', 'mapMastered'), 'Map mastered! Time to pick a new one.');
+  assert.equal(t('es', 'mapMastered'), '¡Mapa dominado! Hora de elegir uno nuevo.');
+  assert.notEqual(t('en', 'mapMastered'), t('en', 'readyForNextMap'));
+});

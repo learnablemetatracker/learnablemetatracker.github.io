@@ -12,6 +12,7 @@ import {
   filterByText,
   countsByStatus,
   filterByRegion,
+  isMapMastered,
   inferMetaRegions,
   summarizeByRegion,
   inferDifficulty,
@@ -73,10 +74,17 @@ test('availableMapsToAdd excludes already-added maps', () => {
   assert.deepEqual(result.map((m) => m.geoguessrId), ['map-b']);
 });
 
-test('isReadyForNextMap uses a 0.9 default threshold', () => {
+test('isReadyForNextMap uses a 0.9 default threshold, but excludes a fully mastered map', () => {
   assert.equal(isReadyForNextMap({ total: 10, mastered: 9, percentMastered: 0.9 }), true);
   assert.equal(isReadyForNextMap({ total: 10, mastered: 8, percentMastered: 0.8 }), false);
   assert.equal(isReadyForNextMap({ total: 0, mastered: 0, percentMastered: 0 }), false);
+  assert.equal(isReadyForNextMap({ total: 10, mastered: 10, percentMastered: 1 }), false);
+});
+
+test('isMapMastered is true only when every meta in a non-empty map is mastered', () => {
+  assert.equal(isMapMastered({ total: 10, mastered: 10 }), true);
+  assert.equal(isMapMastered({ total: 10, mastered: 9 }), false);
+  assert.equal(isMapMastered({ total: 0, mastered: 0 }), false);
 });
 
 test('mapMetas resolves each meta id to its name and current status', () => {
