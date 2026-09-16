@@ -6,6 +6,7 @@ import {
   summarizeByDifficulty,
   availableMapsToAdd,
   isReadyForNextMap,
+  isMapMastered,
   filterByText,
   filterByRegion
 } from '../state.js';
@@ -237,8 +238,10 @@ function renderBrowseSection(catalog, progress, onChange) {
 }
 
 function renderMapCard(map, progress, onChange) {
+  const mastered = isMapMastered(map);
+
   const card = document.createElement('article');
-  card.className = 'map-card';
+  card.className = mastered ? 'map-card map-card--mastered' : 'map-card';
 
   const titleRow = document.createElement('div');
   titleRow.className = 'map-card-title-row';
@@ -269,7 +272,7 @@ function renderMapCard(map, progress, onChange) {
   progressBar.className = 'progress-track';
   progressBar.title = `${percent}%`;
   const progressFill = document.createElement('div');
-  progressFill.className = 'progress-fill';
+  progressFill.className = mastered ? 'progress-fill progress-fill--mastered' : 'progress-fill';
   progressFill.style.width = `${percent}%`;
   progressBar.appendChild(progressFill);
   card.appendChild(progressBar);
@@ -304,7 +307,12 @@ function renderMapCard(map, progress, onChange) {
 
   card.appendChild(actions);
 
-  if (isReadyForNextMap(map)) {
+  if (mastered) {
+    const banner = document.createElement('p');
+    banner.className = 'mastered-banner';
+    banner.textContent = t(progress.language, 'mapMastered');
+    card.appendChild(banner);
+  } else if (isReadyForNextMap(map)) {
     const banner = document.createElement('p');
     banner.className = 'ready-banner';
     banner.textContent = t(progress.language, 'readyForNextMap');
