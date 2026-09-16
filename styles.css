@@ -383,6 +383,15 @@ select:focus-visible, input:focus-visible {
   transition: border-color var(--transition), transform var(--transition);
 }
 
+.map-card--mastered {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.map-card--mastered .map-card-title {
+  color: var(--mastered);
+}
+
 .map-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
@@ -438,6 +447,10 @@ select:focus-visible, input:focus-visible {
   transition: width 240ms ease;
 }
 
+.progress-fill--mastered {
+  background: var(--mastered);
+}
+
 .map-card-count {
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -458,6 +471,13 @@ select:focus-visible, input:focus-visible {
 .ready-banner {
   font-size: 0.82rem;
   color: var(--reviewing);
+  margin: 0;
+}
+
+.mastered-banner {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--mastered);
   margin: 0;
 }
 
