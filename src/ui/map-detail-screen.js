@@ -113,7 +113,7 @@ export function renderMapDetailScreen(catalog, progress, mapId, onChange) {
         } else {
           Object.assign(progress, setMetaStatus(progress, meta.id, value));
         }
-        onChange();
+        onChange(value);
       })
     );
 

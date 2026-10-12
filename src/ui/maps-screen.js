@@ -143,7 +143,7 @@ function renderBrowseSection(catalog, progress, onChange) {
   section.className = 'add-map';
 
   const addTitle = document.createElement('h2');
-  addTitle.textContent = t(progress.language, 'addMap');
+  addTitle.textContent = t(progress.language, 'browseCatalogHeading');
   section.appendChild(addTitle);
 
   const available = availableMapsToAdd(catalog, progress);
@@ -241,7 +241,8 @@ function renderMapCard(map, progress, onChange) {
   const mastered = isMapMastered(map);
 
   const card = document.createElement('article');
-  card.className = mastered ? 'map-card map-card--mastered' : 'map-card';
+  card.className = ['map-card', mastered && 'map-card--mastered', map.isCurrent && 'map-card--current']
+    .filter(Boolean).join(' ');
 
   const titleRow = document.createElement('div');
   titleRow.className = 'map-card-title-row';

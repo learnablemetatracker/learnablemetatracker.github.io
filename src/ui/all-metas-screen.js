@@ -131,7 +131,7 @@ export function renderAllMetasScreen(catalog, progress, onChange) {
         } else {
           Object.assign(progress, setMetaStatus(progress, meta.id, value));
         }
-        onChange();
+        onChange(value);
       })
     );
     row.appendChild(statusCell);

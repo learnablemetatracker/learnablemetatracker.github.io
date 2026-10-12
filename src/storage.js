@@ -1,4 +1,5 @@
 // web/src/storage.js
+import { queueMasteredMeta, cancelPendingMeta } from './personal-map-sync.js';
 const PROGRESS_KEY = 'geometa-tracker:progress';
 const VALID_STATUSES = ['learning', 'reviewing', 'mastered'];
 
@@ -63,10 +64,11 @@ export function setMetaStatus(progress, metaId, status) {
   if (!VALID_STATUSES.includes(status)) {
     throw new Error(`Invalid status: ${status}`);
   }
-  return {
+  const updated = {
     ...progress,
     metaStatus: { ...progress.metaStatus, [metaId]: { status, updatedAt: Date.now() } }
   };
+  return status === 'mastered' ? queueMasteredMeta(updated, metaId) : cancelPendingMeta(updated, metaId);
 }
 
 export function getMetaStatus(progress, metaId) {
@@ -77,7 +79,7 @@ export function clearMetaStatus(progress, metaId) {
   const metaStatus = Object.fromEntries(
     Object.entries(progress.metaStatus).filter(([id]) => id !== metaId)
   );
-  return { ...progress, metaStatus };
+  return cancelPendingMeta({ ...progress, metaStatus }, metaId);
 }
 
 export function exportProgressJson(progress) {

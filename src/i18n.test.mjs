@@ -64,8 +64,8 @@ test('t returns the remove-map/browse-catalog labels added for the browsable cat
 test('t returns the help-screen and external-link labels in each language', () => {
   assert.equal(t('en', 'help'), 'Help');
   assert.equal(t('es', 'help'), 'Ayuda');
-  assert.equal(t('en', 'helpTitle'), 'How this works');
-  assert.equal(t('es', 'helpTitle'), 'Cómo funciona');
+  assert.equal(t('en', 'helpTitle'), 'How to start practicing');
+  assert.equal(t('es', 'helpTitle'), 'Cómo empezar a practicar');
   assert.equal(t('en', 'quizLink'), 'Super Duper');
   assert.equal(t('es', 'quizLink'), 'Super Duper');
   assert.equal(t('en', 'mapMakingManualLink'), 'Map Making Manual');
