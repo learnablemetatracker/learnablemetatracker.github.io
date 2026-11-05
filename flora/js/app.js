@@ -19,6 +19,7 @@ const state = {
   mode: 'navigate', // 'navigate' | 'draw'
   currentPolygon: [],
   world: null,
+  worldPromise: null,
   map: null,
   worldLayer: null,
   polygonLayer: null,
@@ -104,9 +105,6 @@ function init() {
   }
   els.storageWarning.hidden = stored.status !== 'invalid' && stored.status !== 'unavailable';
   initMap();
-  loadWorld().then(() => {
-    render();
-  });
   bindEvents();
   setView('flora');
 }
@@ -117,14 +115,13 @@ function initMap() {
     zoom: MAP_ZOOM,
     minZoom: 1,
     zoomControl: false,
+    zoomSnap: 0,
+    scrollWheelZoom: false,
+    smoothWheelZoom: true,
+    smoothWheelSensitivity: 1.4,
     worldCopyJump: true,
     attributionControl: true,
   });
-
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> | Made with <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
-    maxZoom: 19,
-  }).addTo(state.map);
 
   state.map.createPane('offlineBase');
   state.map.getPane('offlineBase').style.zIndex = '150';
@@ -132,7 +129,30 @@ function initMap() {
     pane: 'offlineBase',
     style: { fillColor: '#e8f4ea', fillOpacity: 1, color: '#9bbba0', weight: 0.5 },
     interactive: false,
-  }).addTo(state.map);
+    attribution: 'Made with <a href="https://www.naturalearthdata.com/">Natural Earth</a>',
+  });
+
+  const tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+    maxZoom: 19,
+    updateWhenZooming: false,
+  });
+  let tilesFailed = false;
+  tileLayer.on('loading', () => { tilesFailed = false; });
+  tileLayer.on('tileerror', () => {
+    tilesFailed = true;
+    loadWorld().then((loaded) => {
+      if (loaded && tilesFailed && !state.map.hasLayer(state.worldLayer)) {
+        state.worldLayer.addTo(state.map);
+      }
+    });
+  });
+  tileLayer.on('load', () => {
+    if (!tilesFailed && state.map.hasLayer(state.worldLayer)) {
+      state.map.removeLayer(state.worldLayer);
+    }
+  });
+  tileLayer.addTo(state.map);
 
   state.polygonLayer = L.layerGroup().addTo(state.map);
   state.previewLayer = L.layerGroup().addTo(state.map);
@@ -159,8 +179,13 @@ function initMap() {
     renderPreviewGuide();
   });
 
-  state.map.on('zoomend moveend', () => {
-    renderMap();
+  let labelsVisibleAtZoom = state.map.getZoom() >= LABEL_MIN_ZOOM;
+  state.map.on('zoomend', () => {
+    const labelsVisible = state.map.getZoom() >= LABEL_MIN_ZOOM;
+    if (labelsVisible === labelsVisibleAtZoom) return;
+    labelsVisibleAtZoom = labelsVisible;
+    state.labelLayer.clearLayers();
+    renderLabels();
   });
 
   // Exposed for manual debugging and automated browser checks.
@@ -171,15 +196,24 @@ function initMap() {
   }
 }
 
-async function loadWorld() {
-  try {
-    const res = await fetch('data/world.geojson');
-    state.world = await res.json();
-    state.worldLayer.addData(state.world);
-  } catch (err) {
-    console.error('No se pudo cargar el mapa base', err);
-    state.world = { type: 'FeatureCollection', features: [] };
-  }
+function loadWorld() {
+  if (state.worldPromise) return state.worldPromise;
+  state.worldPromise = fetch('data/world.geojson')
+    .then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((world) => {
+      state.world = world;
+      state.worldLayer.addData(world);
+      return true;
+    })
+    .catch((err) => {
+      console.error('No se pudo cargar el mapa base', err);
+      state.worldPromise = null;
+      return false;
+    });
+  return state.worldPromise;
 }
 
 function setView(type) {
@@ -723,9 +757,16 @@ function bindMapEvents() {
     state.mouseLatLng = null;
     render();
   });
-  els.btnZoomIn.addEventListener('click', () => state.map.zoomIn());
-  els.btnZoomOut.addEventListener('click', () => state.map.zoomOut());
+  els.btnZoomIn.addEventListener('click', () => {
+    state.map.smoothWheelZoom.stop();
+    state.map.zoomIn();
+  });
+  els.btnZoomOut.addEventListener('click', () => {
+    state.map.smoothWheelZoom.stop();
+    state.map.zoomOut();
+  });
   els.btnReset.addEventListener('click', () => {
+    state.map.smoothWheelZoom.stop();
     state.map.setView(MAP_CENTER, MAP_ZOOM);
   });
 }
