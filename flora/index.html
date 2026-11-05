@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flora & Metas — Atlas de polígonos</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
+</head>
+<body>
+  <header class="app-header" id="app-header">
+    <a class="btn btn--ghost" href="../">← Tracker</a>
+    <h1 class="app-title">Flora & Metas</h1>
+    <nav class="view-tabs" aria-label="Vistas">
+      <button class="view-tab" id="tab-flora" type="button" aria-pressed="false">Flora</button>
+      <button class="view-tab" id="tab-metas" type="button" aria-pressed="false">Metas</button>
+    </nav>
+    <div class="header-actions">
+      <button class="btn btn--ghost" id="btn-export" type="button">Exportar todo</button>
+      <label class="btn btn--ghost file-label" for="btn-import">Importar todo</label>
+      <input class="sr-only" id="btn-import" type="file" accept="application/json" />
+    </div>
+  </header>
+
+  <p class="storage-warning" id="storage-warning" role="status" aria-live="polite" hidden>
+    No se pudieron guardar los cambios en este navegador. Exporta una copia para no perderlos.
+  </p>
+
+  <main class="app-main" id="app-main">
+    <aside class="sidebar" id="sidebar">
+      <nav class="subviews" id="flora-subviews" aria-label="Vistas de flora" hidden>
+        <button class="view-tab" id="subview-map" type="button" aria-pressed="true">Mapa</button>
+        <button class="view-tab" id="subview-cards" type="button" aria-pressed="false">Fichas de especies</button>
+      </nav>
+
+      <section class="panel panel--list" id="panel-list">
+        <header class="panel-header">
+          <h2 class="panel-title" id="list-title">Registros</h2>
+          <button class="btn btn--primary" id="btn-new" type="button">+ Nuevo</button>
+        </header>
+        <input class="search" id="search-records" type="search" placeholder="Buscar..." autocomplete="off" />
+        <button class="btn btn--secondary btn--small list-import" id="btn-import-record-list" type="button">Importar un registro</button>
+        <ul class="record-list" id="record-list" aria-label="Registros"></ul>
+        <p class="empty-state" id="empty-list">No hay registros. Crea uno para empezar.</p>
+      </section>
+
+      <section class="panel panel--editor" id="panel-editor" hidden>
+        <header class="panel-header">
+          <button class="btn btn--small" id="btn-back-to-list" type="button">← Volver al listado</button>
+          <h2 class="panel-title">Editar registro</h2>
+          <button class="btn btn--danger btn--small" id="btn-delete-record" type="button">Borrar</button>
+        </header>
+        <div class="record-transfer">
+          <button class="btn btn--secondary btn--small" id="btn-export-record" type="button">Exportar este registro</button>
+          <button class="btn btn--secondary btn--small" id="btn-import-record" type="button">Importar un registro</button>
+        </div>
+        <form class="editor-form" id="editor-form" novalidate>
+          <label class="field">
+            <span class="field-label">Nombre</span>
+            <input class="input" id="edit-name" type="text" required />
+          </label>
+          <label class="field flora-only" id="field-scientific" hidden>
+            <span class="field-label">Nombre científico</span>
+            <input class="input" id="edit-scientific" type="text" />
+          </label>
+          <label class="field">
+            <span class="field-label">Descripción</span>
+            <textarea class="input input--area" id="edit-description" rows="3"></textarea>
+          </label>
+          <label class="field">
+            <span class="field-label">Color</span>
+            <input class="input input--color" id="edit-color" type="color" />
+          </label>
+          <label class="field">
+            <span class="field-label">Opacidad relleno</span>
+            <input class="input input--range" id="edit-opacity" type="range" min="0" max="1" step="0.05" />
+            <output class="field-hint" id="edit-opacity-val">0.25</output>
+          </label>
+          <label class="field">
+            <span class="field-label">Grosor borde</span>
+            <input class="input input--range" id="edit-stroke" type="range" min="0.5" max="8" step="0.5" />
+          </label>
+          <label class="field">
+            <span class="field-label">Unión de borde</span>
+            <select class="input" id="edit-join">
+              <option value="round">Redonda</option>
+              <option value="miter">Punta</option>
+              <option value="bevel">Bisel</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Etiqueta</span>
+            <select class="input" id="edit-label">
+              <option value="hidden">Oculta</option>
+              <option value="common">Nombre común</option>
+              <option value="scientific">Científico</option>
+              <option value="both">Ambos</option>
+            </select>
+          </label>
+          <label class="field field--inline">
+            <input class="input" id="edit-visible" type="checkbox" checked />
+            <span class="field-label">Visible</span>
+          </label>
+        </form>
+
+        <div class="polygons-section" id="polygons-section">
+          <h3 class="section-title">Polígonos</h3>
+          <ul class="polygon-list" id="polygon-list"></ul>
+          <div class="draw-toolbar" id="draw-toolbar">
+            <button class="btn btn--primary" id="btn-new-area" type="button">Nueva área</button>
+            <div class="draw-actions" id="draw-actions" hidden>
+              <button class="btn btn--primary" id="btn-finish" type="button">Finalizar</button>
+              <button class="btn btn--secondary" id="btn-undo" type="button">Deshacer punto</button>
+              <button class="btn btn--danger" id="btn-cancel" type="button">Cancelar</button>
+            </div>
+            <div class="edit-actions" id="edit-actions" hidden>
+              <button class="btn btn--primary" id="btn-save-edit" type="button">Guardar</button>
+              <button class="btn btn--danger" id="btn-cancel-edit" type="button">Cancelar</button>
+            </div>
+          </div>
+
+          <div class="vertex-editor" id="vertex-editor" hidden>
+            <h4 class="section-title">Vértice seleccionado</h4>
+            <div class="vertex-fields">
+              <label class="field">
+                <span class="field-label">Longitud</span>
+                <input class="input" id="vertex-lon" type="number" step="any" min="-180" max="180" />
+              </label>
+              <label class="field">
+                <span class="field-label">Latitud</span>
+                <input class="input" id="vertex-lat" type="number" step="any" min="-90" max="90" />
+              </label>
+            </div>
+            <div class="vertex-actions">
+              <button class="btn btn--secondary btn--small" id="btn-add-vertex" type="button">Añadir vértice</button>
+              <button class="btn btn--danger btn--small" id="btn-remove-vertex" type="button">Eliminar vértice</button>
+            </div>
+            <p class="hint" id="edit-hint">Arrastra el punto en el mapa o edita las coordenadas.</p>
+          </div>
+
+          <p class="hint" id="draw-hint">Modo navegar: arrastra o desplaza el mapa.</p>
+        </div>
+      </section>
+
+      <section class="panel panel--cards" id="panel-cards" hidden>
+        <header class="panel-header">
+          <h2 class="panel-title">Fichas de especies</h2>
+        </header>
+        <div class="species-cards" id="species-cards-list"></div>
+      </section>
+    </aside>
+
+    <section class="map-section" id="map-section" aria-label="Mapa">
+      <div class="map-toolbar">
+        <button class="btn btn--small" id="btn-mode" type="button">Modo: navegar</button>
+        <div class="zoom-controls">
+          <button class="btn btn--small" id="btn-zoom-out" type="button" aria-label="Alejar">−</button>
+          <button class="btn btn--small" id="btn-zoom-in" type="button" aria-label="Acercar">+</button>
+          <button class="btn btn--small" id="btn-reset" type="button">Ajustar</button>
+        </div>
+      </div>
+      <div class="map-container" id="map-container">
+        <div class="map" id="map" role="img" aria-label="Mapa mundial con polígonos"></div>
+      </div>
+      <div class="legend" id="legend" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <dialog class="modal" id="import-modal">
+    <form class="modal-form" method="dialog">
+      <h2 class="modal-title" id="import-modal-title">Importar datos</h2>
+      <p class="modal-text" id="import-modal-text">Pega el contenido JSON. Si es válido, reemplazará todos los registros actuales.</p>
+      <button class="btn btn--secondary" id="btn-choose-record-file" type="button" hidden>Elegir archivo JSON</button>
+      <input id="import-record-file" type="file" accept="application/json" hidden />
+      <textarea class="input input--area" id="import-text" rows="10"></textarea>
+      <p class="error" id="import-error" role="alert"></p>
+      <div class="modal-actions">
+        <button class="btn btn--secondary" value="cancel" type="submit">Cancelar</button>
+        <button class="btn btn--primary" value="import" type="submit">Importar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="lib/leaflet/leaflet.js"></script>
+  <script type="module" src="js/app.js?v=6"></script>
+</body>
+</html>
